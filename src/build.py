@@ -73,6 +73,8 @@ def clean_html(s, drop_h1=True):
     s = fix_img_srcs(s)
     s = fix_html(s)
     s = re.sub(r'\s+', ' ', s)
+    # мусор из старого WP: base64/urlencode-закодированные обрывки виджетов
+    s = re.sub(r'<p>\s*(?:[A-Za-z0-9+/=%]{100,})\s*</p>', '', s)
     return s.strip()
 
 def strip_tags(s):

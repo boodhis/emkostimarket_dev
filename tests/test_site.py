@@ -355,6 +355,18 @@ def test_no_todo_fixme():
     assert not bad, "черновые пометки:\n  " + "\n  ".join(bad[:15])
 
 
+def test_no_encoded_junk():
+    """Обрывки base64/urlencode из старого WP (виджеты) не должны попасть в текст."""
+    bad = []
+    for p in html_files():
+        h = read(p)
+        if re.search(r"<p>\s*[A-Za-z0-9+/=%]{100,}\s*</p>", h):
+            bad.append(rel(p))
+        if "JTND" in h or "kupiapp" in h or "feedback_vk" in h:
+            bad.append(rel(p))
+    assert not bad, "закодированный мусор: " + ", ".join(bad)
+
+
 def test_home_first_screen():
     h = (ROOT / "index.html").read_text(encoding="utf-8")
     assert "<h1>" in h and "Пластиковые емкости" in h, "на главной нет h1 с темой"
