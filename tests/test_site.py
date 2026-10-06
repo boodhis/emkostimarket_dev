@@ -96,17 +96,25 @@ def test_unique_ids():
 # ---------------------------------------------------------------- ссылки
 
 def test_all_links_resolve():
+    """Все внутренние ссылки (абсолютные и относительные) указывают на файл."""
     bad = []
     for p in html_files():
-        h = read(p)
-        for href in re.findall(r'(?:href|src|data-full)="(/[^"]*)"', h):
-            target = href.split("#")[0].split("?")[0].lstrip("/")
+        base = p.parent
+        for href in re.findall(r'(?:href|src|data-full)="([^"]*)"', read(p)):
+            if href.startswith(("http://", "https://", "//", "#",
+                                "mailto:", "tel:", "data:")):
+                continue
+            target = href.split("#")[0].split("?")[0]
             if not target:
                 continue
-            cands = [target] if "." in target.rsplit("/", 1)[-1] \
-                else [target, target.rstrip("/") + "/index.html"]
-            if not any((ROOT / c).exists() for c in cands):
+            resolved = (base / target).resolve()
+            cands = [resolved] if "." in resolved.name \
+                else [resolved, resolved.parent / (resolved.name + ".html"),
+                      resolved / "index.html"]
+            if not any(Path(c).exists() for c in cands):
                 bad.append(f"{rel(p)} -> {href}")
+            elif not str(resolved).startswith(str(ROOT)):
+                bad.append(f"{rel(p)} -> {href} (выходит за пределы сайта)")
     assert not bad, "битые ссылки:\n  " + "\n  ".join(bad[:30])
 
 
@@ -149,8 +157,12 @@ def test_robots():
 def test_all_images_exist():
     bad = []
     for p in html_files():
-        for src in re.findall(r'<img[^>]+src="(/img/[^"]+)"', read(p)):
-            if not (ROOT / src.lstrip("/")).exists():
+        base = p.parent
+        for src in re.findall(r'<img[^>]+src="([^"]+)"', read(p)):
+            if src.startswith(("http", "//", "data:")):
+                bad.append(f"{rel(p)} -> {src} (внешняя картинка)")
+                continue
+            if not (base / src.split("?")[0]).resolve().exists():
                 bad.append(f"{rel(p)} -> {src}")
     assert not bad, "нет файла картинки:\n  " + "\n  ".join(bad[:20])
 
@@ -346,7 +358,7 @@ def test_no_todo_fixme():
 def test_home_first_screen():
     h = (ROOT / "index.html").read_text(encoding="utf-8")
     assert "<h1>" in h and "Пластиковые емкости" in h, "на главной нет h1 с темой"
-    assert 'href="/catalog/"' in h, "на главной нет входа в каталог"
+    assert re.search(r'href="(?:\./)?catalog/"', h), "на главной нет входа в каталог"
     assert h.count('class="card') >= 20, "на главной слишком мало товаров"
 
 

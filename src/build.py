@@ -396,6 +396,12 @@ FOOT = f"""</main>
 """
 
 def write(path, content):
+    # Относительные пути: сайт одинаково работает и в корне домена, и в подпапке
+    # GitHub Pages (/emkostimarket_dev/), и при открытии файла с диска.
+    if path.endswith(".html"):
+        prefix = "../" * path.count("/")
+        content = re.sub(r'((?:href|src|data-full)=")/(?!/)',
+                         lambda m: m.group(1) + prefix, content)
     full = os.path.join(SITE, path)
     os.makedirs(os.path.dirname(full), exist_ok=True)
     with open(full, "w", encoding="utf-8") as f:
