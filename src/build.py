@@ -325,21 +325,27 @@ def head(title, desc, canonical, extra=""):
 <meta property="og:url" content="{BASE}{canonical}">
 <meta property="og:image" content="{BASE}/img/og.jpg">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#58a8e6">
 <link rel="stylesheet" href="/css/style.css">
 {extra}</head>
 <body>
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <span class="tb-slogan">Магазин пластиковых изделий для бытовых, хозяйственных и промышленных потребностей</span>
+    <a class="tb-phone" href="tel:{PHONE_TEL}">{PHONE_TEL}</a>
+  </div>
+</div>
 <header class="hdr">
   <div class="wrap hdr-in">
     <a class="logo" href="/" aria-label="Емкости Маркет — на главную">
-      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M8 4h16l-2 24H10L8 4zm3.2 3 1.5 15h6.6L20.8 7H11.2z" fill="currentColor"/></svg>
-      <span>Емкости<em>Маркет</em></span>
+      <img src="/img/logo.webp" alt="Емкости Маркет" width="172" height="46" fetchpriority="high" decoding="async">
     </a>
     <nav class="nav" id="nav">
       <a href="/catalog/">Каталог</a>
       <a href="/about/">О компании</a>
-      <a href="/delivery/">Доставка</a>
-      <a href="/payment/">Оплата</a>
-      <a href="/contacts/">Контакты</a>
+      <a href="/delivery/">Доставка товаров</a>
+      <a href="/payment/">Способы оплаты</a>
+      <a href="/contacts/">Контакты и адреса</a>
     </nav>
     <div class="hdr-contacts">
       <a class="hdr-phone" href="tel:{PHONE_TEL}">{PHONE_HUMAN}</a>
@@ -455,12 +461,56 @@ def build_home(products, cats):
         sect += "".join(product_card(p) for p in items)
         sect += "</div></section>"
 
-    cats_list = ""
-    for c in sorted([x for x in cats if not (x.get("parent") or 0)], key=lambda x: x["name"]):
+    # 4 преимущества — как feature-box в оригинале
+    adv_items = [
+        ("feature-discount.webp", "Система скидок", "Оптом скидки до 15 %"),
+        ("feature-install.webp", "Монтаж и врезка", "Установка кранов бесплатно"),
+        ("feature-legal.webp", "Для компаний", "ИП и ООО с НДС и без НДС"),
+        ("feature-delivery.webp", "Доставка по России", "Доставляем в любой город РФ"),
+    ]
+    adv = '<section class="wrap adv" aria-label="Преимущества">'
+    for pic, title, desc in adv_items:
+        adv += ('<div class="adv-item"><img class="adv-ic" src="/img/%s" alt="%s" '
+                'width="50" height="50" loading="lazy" decoding="async">'
+                "<h3>%s</h3><p>%s</p></div>" % (pic, html.escape(title), title, desc))
+    adv += "</section>"
+
+    # категории на главной — 10 карточек с баннерами (как в оригинале)
+    home_cats = [
+        "cilindriheskie-emkosti", "gorizontalnye-emkosti", "pryamougolnye",
+        "podzemnye-emkosti-dlya-pitevoj-vody", "nakopitelnaye-emkosti",
+        "septiki-dlya-kanalizatsii", "konusnye-emkosti-s-polnym-slivom",
+        "mini-azs-dlya-dizelnogo-topliva", "emkosti-usilennye-lya-perevozki",
+        "zapravochnye-stancii-i-trk",
+    ]
+    banners = {
+        "cilindriheskie-emkosti": "banner-vertikalnye-emkosti-800x600-1.webp",
+        "gorizontalnye-emkosti": "banner-gorizontalnye-emkosti-800x600-v2.webp",
+        "pryamougolnye": "banner-pryamougolnye-emkosti-800x600-1.webp",
+        "podzemnye-emkosti-dlya-pitevoj-vody": "banner-podzemnye-emkosti-dlya-pitevoi-vody-800x600-1.webp",
+        "nakopitelnaye-emkosti": "banner-podzemnye-emkosti-dlya-kanalizacii-800x600-1.webp",
+        "septiki-dlya-kanalizatsii": "banner-septiki-dlya-kanalizacii-800x600-1.webp",
+        "konusnye-emkosti-s-polnym-slivom": "banner-konusnye-emkosti-czt-800x600-1.webp",
+        "mini-azs-dlya-dizelnogo-topliva": "banner-mini-azs-dlya-dizelnogo-topliva-800x600-1.webp",
+        "emkosti-usilennye-lya-perevozki": "banner-emkosti-usilennye-dlya-perevozki-800x600-v2.webp",
+        "zapravochnye-stancii-i-trk": "banner-trk.webp",
+    }
+    by_slug = {c["slug"]: c for c in cats}
+    cat_grid = '<section class="wrap sec"><div class="sec-h"><h2>Каталог</h2>' \
+               '<a class="more" href="/catalog/">Весь каталог →</a></div><div class="cat-grid">'
+    for slug in home_cats:
+        c = by_slug.get(slug)
+        if not c:
+            continue
         n = len(collect(c, products))
-        if n:
-            cats_list += '<li><a href="/catalog/%s/">%s <span>%d</span></a></li>' % (
-                c["slug"], html.escape(c["name"]), n)
+        pic = banners[slug]
+        cat_grid += (
+            '<a class="cat-card" href="/catalog/%s/">'
+            '<img class="cat-pic" src="/img/%s" alt="%s" width="800" height="600" loading="lazy" decoding="async">'
+            '<span class="cat-name">%s</span><span class="cat-cnt">(%d)</span>'
+            '<span class="btn-watch">Смотреть</span></a>' % (
+                slug, pic, html.escape(c["name"]), html.escape(c["name"]), n))
+    cat_grid += "</div></section>"
 
     body = f"""
 <section class="hero">
@@ -478,30 +528,29 @@ def build_home(products, cats):
         <li><b>РФ</b><span>доставка по стране</span></li>
       </ul>
     </div>
-    <div class="hero-pic">{img_tag("http://192.168.0.212/wp-content/uploads/2019/04/2-2.jpg", "Пластиковые емкости", "hero-img", lazy=False)}</div>
+    <div class="hero-pic"><img class="hero-img" src="/img/hero.webp" alt="Пластиковые емкости" width="1170" height="568" fetchpriority="high" decoding="async"></div>
   </div>
 </section>
 
-<section class="wrap sec">
-  <div class="sec-h"><h2>Каталог</h2></div>
-  <ul class="cat-list">{cats_list}</ul>
-</section>
-
-{sect}
+{adv}
 
 <section class="wrap cta-band">
   <div>
-    <h2>Нужна ёмкость под задачу?</h2>
+    <h2>Не знаете, какую ёмкость выбрать?</h2>
     <p>Подберём объём, материал и комплектацию. Рассчитаем доставку по России.</p>
   </div>
-  <a class="btn btn-primary" href="tel:{PHONE_TEL}">Позвонить {PHONE_HUMAN}</a>
+  <a class="btn btn-primary" href="/contacts/">Подобрать ёмкость</a>
 </section>
+
+{cat_grid}
+
+{sect}
 """
     write("index.html", head(
         "Пластиковые емкости для воды и топлива | Емкости Маркет",
         "Пластиковые ёмкости, мини АЗС для ДТ, септики и подземные резервуары. "
         "166 товаров, доставка по всей России. ООО «Емкости Маркет», Санкт-Петербург.",
-        "/", extra='<meta name="theme-color" content="#0d5c46">\n') + body + FOOT)
+        "/", extra="") + body + FOOT)
 
 def collect(cat, products):
     """товары категории и всех потомков"""
